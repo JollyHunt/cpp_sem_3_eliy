@@ -7,7 +7,13 @@ add_executable(cli src/cli.cpp)
 
 add_executable(han src/hand_test_ls.cpp)              
 
-# add_executable(main src/main.cpp)    
+set(SOURCES
+    src/main.cpp
+    src/meiang_generator.cpp
+)
+
+add_executable(main ${SOURCES})
+target_include_directories(main PRIVATE include)  
 
 find_package(GTest QUIET)
 if(GTest_FOUND)

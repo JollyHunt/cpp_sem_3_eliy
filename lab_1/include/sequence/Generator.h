@@ -3,6 +3,11 @@
 
 #include <memory>
 #include <optional>
+#include <functional>
+#include <functional>
+#include <cmath>
+#include <stdexcept>
+
 
 template <typename T>
 class LazySequence;
@@ -245,5 +250,51 @@ public:
     }
 };
 
+// --- meian
+
+class MedianGenerator : public Generator<double> {
+protected:
+    std::unique_ptr<LazySequence<double>> sorted_data_;
+    size_t count_ = 0;
+
+    virtual void insert_sorted(double value);
+    virtual double calculate_median() const;
+
+public:
+    MedianGenerator();
+    double GetNext() override = 0;
+    bool HasNext() const override { return true; }
+};
+
+class SineMedianGenerator : public MedianGenerator {
+private:
+    double angle_ = 0.0;
+    static constexpr double STEP = M_PI / 12.0;
+public:
+    double GetNext() override;
+};
+
+class CosineMedianGenerator : public MedianGenerator {
+private:
+    double angle_ = 0.0;
+    static constexpr double STEP = M_PI / 12.0;
+public:
+    double GetNext() override;
+};
+
+class LinearMedianGenerator : public MedianGenerator {
+private:
+    double x_ = 0.0;
+public:
+    double GetNext() override;
+};
+
+class FunctionalMedianGenerator : public MedianGenerator {
+private:
+    std::function<double()> generator_;
+public:
+    explicit FunctionalMedianGenerator(std::function<double()> gen);
+    double GetNext() override;
+};
 
 #endif
