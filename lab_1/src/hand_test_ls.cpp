@@ -7,6 +7,4 @@
 
 int main() {
     auto test_seq = LazySequence<int>();
-    
-    test_seq.Print();
 }

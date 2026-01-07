@@ -126,11 +126,10 @@ TEST_F(LazySequenceTest, Zip) {
     LazySequence<int> s1(a, 3);
     LazySequence<std::string> s2(b, 3);
     auto zipped = s1.Zip(s2);
-    EXPECT_EQ(zipped.Size(), 3);
-    EXPECT_EQ(zipped.Get(0).first, 1);
-    EXPECT_EQ(zipped.Get(0).second, "x");
-    EXPECT_EQ(zipped.Get(2).first, 3);
-    EXPECT_EQ(zipped.Get(2).second, "z");
+    EXPECT_EQ(zipped->Get(0).first, 1);
+    EXPECT_EQ(zipped->Get(0).second, "x");
+    EXPECT_EQ(zipped->Get(2).first, 3);
+    EXPECT_EQ(zipped->Get(2).second, "z");
 }
 
 TEST_F(LazySequenceTest, Reduce) {

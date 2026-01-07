@@ -5,7 +5,9 @@ include_directories(include)
 
 add_executable(cli src/cli.cpp)
 
-add_executable(han src/hand_test_ls.cpp)                                                            
+add_executable(han src/hand_test_ls.cpp)              
+
+# add_executable(main src/main.cpp)    
 
 find_package(GTest QUIET)
 if(GTest_FOUND)

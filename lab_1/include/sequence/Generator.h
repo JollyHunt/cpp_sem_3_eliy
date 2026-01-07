@@ -210,28 +210,17 @@ public:
 };
 
 template <typename T, typename T2>
-class ZipGenerator {
+class ZipGenerator : public Generator<std::pair<T, T2>> {
 private:
     std::shared_ptr<LazySequence<T>> first_;
     std::shared_ptr<LazySequence<T2>> second_;
     size_t current_index_ = 0;
-    size_t min_capacity_;
 
 public:
     ZipGenerator(std::shared_ptr<LazySequence<T>> first, std::shared_ptr<LazySequence<T2>> second)
-        : first_(std::move(first)), second_(std::move(second)) {
-        if (first_->is_finite() && second_->is_finite()) {
-            min_capacity_ = std::min(first_->get_capacity(), second_->get_capacity());
-        } else if (first_->is_finite()) {
-            min_capacity_ = first_->get_capacity();
-        } else if (second_->is_finite()) {
-            min_capacity_ = second_->get_capacity();
-        } else {
-            min_capacity_ = 0;
-        }
-    }
+        : first_(std::move(first)), second_(std::move(second)) {}
 
-    std::pair<T, T2> GetNext() {
+    std::pair<T, T2> GetNext() override {
         if (first_->is_finite() && current_index_ >= first_->get_capacity()) {
             throw std::out_of_range("First sequence exhausted");
         }
@@ -245,7 +234,7 @@ public:
         return std::make_pair(val1, val2);
     }
 
-    bool HasNext() const {
+    bool HasNext() const override {
         if (first_->is_finite() && current_index_ >= first_->get_capacity()) {
             return false;
         }

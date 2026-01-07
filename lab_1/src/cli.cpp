@@ -79,7 +79,7 @@ int main() {
                 LazySequence<std::string> s2(xb, 3);
                 auto z = s1.Zip(s2);
                 for (size_t i = 0; i < 3; ++i)
-                    std::cout << "(" << z.Get(i).first << "," << z.Get(i).second << ") ";
+                    std::cout << "(" << z->Get(i).first << " " << z->Get(i).second << ") ";
                 std::cout << "\n";
                 break;
             }

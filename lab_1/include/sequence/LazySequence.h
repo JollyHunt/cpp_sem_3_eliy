@@ -34,36 +34,18 @@ private:
     }
 
 public:
-    LazySequence()
-        : memo_(std::make_unique<ListSequence<T>>())
-        , generator_(nullptr)
-        , is_finite_(true)
-        , finite_capacity_(0) {}
+    LazySequence(): memo_(std::make_unique<ListSequence<T>>()), generator_(nullptr), is_finite_(true), finite_capacity_(0) {}
 
-    explicit LazySequence(std::shared_ptr<Generator<T>> gen)
-        : memo_(std::make_unique<ListSequence<T>>())
-        , generator_(std::move(gen))
-        , is_finite_(false)
-        , finite_capacity_(0) {}
+    explicit LazySequence(std::shared_ptr<Generator<T>> gen): memo_(std::make_unique<ListSequence<T>>()), generator_(std::move(gen)), is_finite_(false), finite_capacity_(0) {}
 
-    LazySequence(T* items, size_t count)
-        : memo_(std::make_unique<ListSequence<T>>(items, count))
-        , generator_(nullptr)
-        , is_finite_(true)
-        , finite_capacity_(count) {}
+    LazySequence(T* items, size_t count) : memo_(std::make_unique<ListSequence<T>>(items, count)), generator_(nullptr), is_finite_(true), finite_capacity_(count) {}
 
-    explicit LazySequence(const ListSequence<T>& seed)
-        : memo_(std::make_unique<ListSequence<T>>(seed))
-        , generator_(nullptr)
-        , is_finite_(true)
-        , finite_capacity_(seed.Size()) {}
+    explicit LazySequence(const ListSequence<T>& seed): memo_(std::make_unique<ListSequence<T>>(seed)), generator_(nullptr), is_finite_(true), finite_capacity_(seed.Size()) {}
 
-    LazySequence(const LazySequence& other) 
-        : memo_(std::make_unique<ListSequence<T>>(*other.memo_))
-        , generator_(other.generator_)
-        , is_finite_(other.is_finite_)
-        , finite_capacity_(other.finite_capacity_) {}
-
+    LazySequence(const LazySequence& other)  : memo_(std::make_unique<ListSequence<T>>(*other.memo_)), generator_(other.generator_), is_finite_(other.is_finite_), finite_capacity_(other.finite_capacity_) {}
+    
+    LazySequence(LazySequence&& other) noexcept : memo_(std::move(other.memo_)), generator_(std::move(other.generator_)), is_finite_(other.is_finite_), finite_capacity_(other.finite_capacity_) {}
+    
     LazySequence& operator=(const LazySequence& other) {
         if (this != &other) {
             memo_ = std::make_unique<ListSequence<T>>(*other.memo_);
@@ -74,20 +56,14 @@ public:
         return *this;
     }
 
-    LazySequence(LazySequence&& other) noexcept 
-    : memo_(std::move(other.memo_))
-    , generator_(std::move(other.generator_))
-    , is_finite_(other.is_finite_)
-    , finite_capacity_(other.finite_capacity_) {}
-
     LazySequence& operator=(LazySequence&& other) noexcept {
-    if (this != &other) {
-        memo_ = std::move(other.memo_);
-        generator_ = std::move(other.generator_);
-        is_finite_ = other.is_finite_;
-        finite_capacity_ = other.finite_capacity_;
-    }
-    return *this;
+        if (this != &other) {
+            memo_ = std::move(other.memo_);
+            generator_ = std::move(other.generator_);
+            is_finite_ = other.is_finite_;
+            finite_capacity_ = other.finite_capacity_;
+        }
+        return *this;
     }
 
     T Get(size_t index) const {
@@ -158,15 +134,13 @@ public:
     }
 
     template <typename T2>
-    ListSequence<std::pair<T, T2>> Zip(const LazySequence<T2>& other) const {
-        ZipGenerator<T, T2> zipper(std::make_shared<LazySequence<T>>(*this), std::make_shared<LazySequence<T2>>(other));
-        ListSequence<std::pair<T, T2>> result;
-        while (zipper.HasNext()) {
-            result.Append(zipper.GetNext());
-        }
-        return result;
+    std::unique_ptr<LazySequence<std::pair<T, T2>>> Zip(const LazySequence<T2>& other) const {
+        auto self_ptr = std::make_shared<LazySequence<T>>(*this);
+        auto other_ptr = std::make_shared<LazySequence<T2>>(other);
+        auto zip_gen = std::make_shared<ZipGenerator<T, T2>>(std::move(self_ptr), std::move(other_ptr));
+        return std::make_unique<LazySequence<std::pair<T, T2>>>(std::move(zip_gen));
     }
-
+    
     std::unique_ptr<LazySequence<T>> Where(std::function<bool(T)> pred) const {
         auto self_ptr = std::make_shared<LazySequence<T>>(*this);
         auto where_gen = std::make_shared<WhereGenerator<T>>(std::move(self_ptr), std::move(pred));
@@ -174,7 +148,7 @@ public:
     }
 
     template <typename T2>
-    T2 Reduce(std::function<T2(T2, T)> reucer, T2 initial) const {
+    T2 Reduce(std::function<T2(T2, T)> reducer, T2 initial) const {
         T2 acc = initial;
         size_t i = 0;
         while (true) {
@@ -183,24 +157,13 @@ public:
             }
             try {
                 T val = Get(i++);
-                acc = reucer(acc, val);
+                acc = reducer(acc, val);
             } catch (const std::out_of_range&) {
                 break;
             }
         }
         return acc;
     }
-
-    void Print() const {
-        std::cout << "LazySeq (finite=" << is_finite_
-                  << ", cap=" << (is_finite_ ? std::to_string(finite_capacity_) : "inf")
-                  << ", mat=" << memo_->Size() << "): ";
-        for (size_t i = 0; i < memo_->Size(); ++i) {
-            std::cout << memo_->Get(i) << " ";
-        }
-        std::cout << "\n";
-    }
-
 };
 
 #endif
