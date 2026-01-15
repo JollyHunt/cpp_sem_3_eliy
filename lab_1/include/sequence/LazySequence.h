@@ -10,13 +10,14 @@
 
 template <typename T>
 class LazySequence {
-private:
+protected:
     std::unique_ptr<ListSequence<T>> memo_;
     std::shared_ptr<Generator<T>> generator_;
     bool is_finite_;
     size_t finite_capacity_;
 
-    void materialize_up_to(size_t index) {
+
+    virtual void materialize_up_to(size_t index) {
         if (is_finite_ && index >= finite_capacity_) {
             throw std::out_of_range("Index exceeds finite capacity");
         }

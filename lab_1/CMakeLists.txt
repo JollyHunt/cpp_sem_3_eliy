@@ -3,13 +3,8 @@ project(LazySequenceProject)
 
 include_directories(include)
 
-add_executable(cli src/cli.cpp)
-
-add_executable(han src/hand_test_ls.cpp)              
-
 set(SOURCES
     src/main.cpp
-    src/meiang_generator.cpp
 )
 
 add_executable(main ${SOURCES})

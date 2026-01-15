@@ -4,10 +4,10 @@
 #include <memory>
 #include <optional>
 #include <functional>
-#include <functional>
 #include <cmath>
 #include <stdexcept>
-
+#include <string>
+#include <cmath>
 
 template <typename T>
 class LazySequence;
@@ -250,51 +250,52 @@ public:
     }
 };
 
-// --- meian
 
-class MedianGenerator : public Generator<double> {
-protected:
-    std::unique_ptr<LazySequence<double>> sorted_data_;
-    size_t count_ = 0;
-
-    virtual void insert_sorted(double value);
-    virtual double calculate_median() const;
+class NaturalNumbersDoubleGenerator : public Generator<double> {
+private:
+    double current_ = 1.0;
 
 public:
-    MedianGenerator();
-    double GetNext() override = 0;
-    bool HasNext() const override { return true; }
+    double GetNext() override {
+        return current_++;
+    }
+
+    bool HasNext() const override {
+        return true;
+    }
 };
 
-class SineMedianGenerator : public MedianGenerator {
+class LinearFunctionGenerator : public Generator<double> {
 private:
-    double angle_ = 0.0;
+    int x_ = 0;
+
+public:
+    double GetNext() override {
+        double val = 2.0 * x_ + 5.0;
+        x_++;
+        return val;
+    }
+
+    bool HasNext() const override {
+        return true;
+    }
+};
+
+class SineSequenceGenerator : public Generator<double> {
+private:
+    int n_ = 0;
     static constexpr double STEP = M_PI / 12.0;
-public:
-    double GetNext() override;
-};
 
-class CosineMedianGenerator : public MedianGenerator {
-private:
-    double angle_ = 0.0;
-    static constexpr double STEP = M_PI / 12.0;
 public:
-    double GetNext() override;
-};
+    double GetNext() override {
+        double x = n_ * STEP;
+        n_++;
+        return std::sin(x);
+    }
 
-class LinearMedianGenerator : public MedianGenerator {
-private:
-    double x_ = 0.0;
-public:
-    double GetNext() override;
-};
-
-class FunctionalMedianGenerator : public MedianGenerator {
-private:
-    std::function<double()> generator_;
-public:
-    explicit FunctionalMedianGenerator(std::function<double()> gen);
-    double GetNext() override;
+    bool HasNext() const override {
+        return true;
+    }
 };
 
 #endif

@@ -6,5 +6,3 @@ cmake ..
 make
 
 ./main
-
-# ./han
