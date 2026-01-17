@@ -1,29 +1,23 @@
-#include "visualisation/GV.h"
+#include "UGraph.h"
+#include "ege/CarEdge.h"
+#include "ege/TruckEdge.h"
+#include "ege/PlaneEdge.h"
+#include "ege/ShipEdge.h"
 #include "algo_lib/dijkstra.h"
+#include "visualisation/GV.h"
 #include <iostream>
 
 int main() {
     int choice;
-    std::cout << "Select graph: ";
+    std::cout << "Select graph (1 or 2): ";
     std::cin >> choice;
 
     if (choice == 1) {
         UGraph graph;
-        Vertex A("A", 0.5, 10.0);
-        Vertex B("B", 0.3, 8.0);
-        Vertex C("C", 0.4, 7.0);
-        Vertex E("E", 0.2, 5.0);
-        Vertex G("G", 0.6, 12.0);
-        Vertex F("F", 0.7, 15.0);
-        Vertex H("H", 0.35, 9.0);
+        CommonVertex A("A"), B("B"), C("C"), E("E"), F("F"), G("G"), H("H");
 
-        graph.addVertex(A);
-        graph.addVertex(B);
-        graph.addVertex(C);
-        graph.addVertex(E);
-        graph.addVertex(F);
-        graph.addVertex(G);
-        graph.addVertex(H);
+        graph.addVertex(A); graph.addVertex(B); graph.addVertex(C);
+        graph.addVertex(E); graph.addVertex(F); graph.addVertex(G); graph.addVertex(H);
 
         graph.addEdge(new CarEdge(A, B, 8.0, 50.0, 2.0, 5.0, "clear"));
         graph.addEdge(new TruckEdge(A, C, 12.0, 80.0, 10.0, 20.0, "light_rain"));
@@ -38,28 +32,24 @@ int main() {
         graph.addEdge(new TruckEdge(G, F, 30.0, 200.0, 10.0, 20.0, "light_rain"));
         graph.addEdge(new CarEdge(E, G, 18.0, 120.0, 2.0, 5.0, "snow"));
 
-        GV::visualize(graph, "full_graph_7v");
+        visualizeGraph(graph, "full_graph_7v");
 
-        UGraph path = dijkstra(graph, A, F, 1.0, 1.0, 1.0, 1.0, true);
-        if (!path.isEmpty()) {
-            GV::visualize(path, "path_7v");
+        auto path = dijkstra(graph, A, F, [](const CommonEdge* e) {
+            return e->canCarry(1.0, 1.0);
+        });
+
+        if (path.Size() > 0) {
+            visualizeWithPath(graph, path, "path_7v");
         } else {
             std::cout << "No path found.\n";
         }
 
     } else if (choice == 2) {
         UGraph graph;
-        Vertex A("A", 0.2, 5.0);
-        Vertex B("B", 0.1, 3.0);
-        Vertex C("C", 0.3, 7.0);
-        Vertex D("D", 0.15, 4.0);
-        Vertex E("E", 0.25, 6.0);
+        CommonVertex A("A"), B("B"), C("C"), D("D"), E("E");
 
-        graph.addVertex(A);
-        graph.addVertex(B);
-        graph.addVertex(C);
-        graph.addVertex(D);
-        graph.addVertex(E);
+        graph.addVertex(A); graph.addVertex(B); graph.addVertex(C);
+        graph.addVertex(D); graph.addVertex(E);
 
         graph.addEdge(new CarEdge(A, B, 2.0, 10.0, 2.0, 5.0, "clear"));
         graph.addEdge(new TruckEdge(B, C, 3.0, 20.0, 10.0, 20.0, "light_rain"));
@@ -68,11 +58,14 @@ int main() {
         graph.addEdge(new CarEdge(A, C, 5.0, 25.0, 2.0, 5.0, "clear"));
         graph.addEdge(new TruckEdge(C, E, 6.0, 35.0, 10.0, 20.0, "snow"));
 
-        GV::visualize(graph, "full_graph_5v-clearAC");
+        visualizeGraph(graph, "full_graph_5v");
 
-        UGraph path = dijkstra(graph, A, E, 1.0, 1.0, 1.0, 1.0, true);
-        if (!path.isEmpty()) {
-            GV::visualize(path, "path_5v-clearAC");
+        auto path = dijkstra(graph, A, E, [](const CommonEdge* e) {
+            return e->canCarry(1.0, 1.0);
+        });
+
+        if (path.Size() > 0) {
+            visualizeWithPath(graph, path, "path_5v");
         } else {
             std::cout << "No path found.\n";
         }

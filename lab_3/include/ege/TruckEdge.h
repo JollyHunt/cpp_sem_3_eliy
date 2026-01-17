@@ -1,22 +1,20 @@
 #ifndef TRUCK_EDGE_H
 #define TRUCK_EDGE_H
 
-#include "AbstractEdge.h"
+#include "TransportEdge.h"
 
-class TruckEdge : public AbstractEdge {
+class TruckEdge : public TransportEdge {
 public:
-    TruckEdge(const Vertex& from, const Vertex& to,
+    TruckEdge(const CommonVertex& from, const CommonVertex& to,
               double baseTime, double baseCost,
               double maxWeight, double maxSize,
-              const std::string& weather)
-        : AbstractEdge(from, to, baseTime, baseCost, maxWeight, maxSize, weather) {}
+              const std::string& weather,
+              double trafficFactor = 1.0)
+        : TransportEdge(from, to, baseTime, baseCost, maxWeight, maxSize, weather) {
 
-    double getActualTime(double trafficFactor = 1.0) const override {
-        return baseTime_ * weatherFactor_ * trafficFactor;
-    }
-
-    double getActualCost(double timeMultiplier = 1.0) const override {
-        return baseCost_ * timeMultiplier;
+        weightFunc_ = [this, trafficFactor]() {
+            return baseTime_ * weatherFactor_ * trafficFactor;
+        };
     }
 
     std::string getTypeName() const override { return "truck"; }

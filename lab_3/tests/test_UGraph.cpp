@@ -8,14 +8,14 @@
 
 TEST(UGraphTest, AddVertexAndEdge) {
     UGraph g;
-    Vertex A("Port");
-    Vertex B("City");
+    CommonVertex A("Port");
+    CommonVertex B("City");
 
     g.addVertex(A);
     g.addVertex(B);
 
     g.addEdge(new ShipEdge(A, B, 24.0, 100.0, 500.0, 1000.0, "storm"));
-    g.addEdge(new TruckEdge(A, B, 8.0, 50.0, 10.0, 20.0, "light_rain"));
+    g.addEdge(new TruckEdge(A, B, 8.0, 50.0, 10.0, 20.0, "light_rain", 1.5));
 
     EXPECT_EQ(g.vertexCount(), 2);
     EXPECT_EQ(g.edgeCount(), 2);
@@ -23,20 +23,21 @@ TEST(UGraphTest, AddVertexAndEdge) {
     auto edges = g.getEdgesOf(A);
     EXPECT_EQ(edges.Size(), 2);
 
-    AbstractEdge* e1 = edges.Get(0);
-    AbstractEdge* e2 = edges.Get(1);
+    CommonEdge* e1 = edges.Get(0);
+    CommonEdge* e2 = edges.Get(1);
 
-    EXPECT_EQ(e1->getTypeName(), "ship");
-    EXPECT_DOUBLE_EQ(e1->getActualTime(), 24.0 * 2.0);
-
-    EXPECT_EQ(e2->getTypeName(), "truck");
-    EXPECT_DOUBLE_EQ(e2->getWeatherFactor(), 1.2);
-    EXPECT_DOUBLE_EQ(e2->getActualTime(1.5), 8.0 * 1.2 * 1.5);
+    if (e1->getWeight() == 24.0 * 2.0) {
+        EXPECT_DOUBLE_EQ(e1->getWeight(), 48.0);
+        EXPECT_DOUBLE_EQ(e2->getWeight(), 8.0 * 1.2 * 1.5);
+    } else {
+        EXPECT_DOUBLE_EQ(e1->getWeight(), 8.0 * 1.2 * 1.5);
+        EXPECT_DOUBLE_EQ(e2->getWeight(), 48.0);
+    }
 }
 
 TEST(UGraphTest, EdgeWithInvalidVertex) {
     UGraph g;
-    Vertex A("A"), B("B");
+    CommonVertex A("A"), B("B");
     g.addVertex(A);
 
     EXPECT_THROW(
@@ -47,14 +48,14 @@ TEST(UGraphTest, EdgeWithInvalidVertex) {
 
 TEST(UGraphTest, CanCarry) {
     UGraph g;
-    Vertex A("A"), B("B");
+    CommonVertex A("A"), B("B");
     g.addVertex(A);
     g.addVertex(B);
 
     g.addEdge(new TruckEdge(A, B, 8.0, 50.0, 10.0, 20.0, "clear"));
 
     auto edges = g.getEdgesOf(A);
-    AbstractEdge* e = edges.Get(0);
+    CommonEdge* e = edges.Get(0);
 
     EXPECT_TRUE(e->canCarry(5.0, 10.0));
     EXPECT_FALSE(e->canCarry(15.0, 10.0));

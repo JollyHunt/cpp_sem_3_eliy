@@ -1,22 +1,19 @@
 #ifndef SHIP_EDGE_H
 #define SHIP_EDGE_H
 
-#include "AbstractEdge.h"
+#include "TransportEdge.h"
 
-class ShipEdge : public AbstractEdge {
+class ShipEdge : public TransportEdge {
 public:
-    ShipEdge(const Vertex& from, const Vertex& to,
+    ShipEdge(const CommonVertex& from, const CommonVertex& to,
              double baseTime, double baseCost,
              double maxWeight, double maxSize,
              const std::string& weather)
-        : AbstractEdge(from, to, baseTime, baseCost, maxWeight, maxSize, weather) {}
+        : TransportEdge(from, to, baseTime, baseCost, maxWeight, maxSize, weather) {
 
-    double getActualTime(double = 1.0) const override {
-        return baseTime_ * weatherFactor_;
-    }
-
-    double getActualCost(double = 1.0) const override {
-        return baseCost_;
+        weightFunc_ = [this]() {
+            return baseTime_ * weatherFactor_;
+        };
     }
 
     std::string getTypeName() const override { return "ship"; }

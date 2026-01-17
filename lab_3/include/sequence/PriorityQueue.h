@@ -101,7 +101,7 @@ public:
     }
 
     T Dequeue() {
-        if (IsEmpty()) throw std::out_of_range("PriorityQueue is empty");
+        if (IsEmpty()) throw std::out_of_range("PriorityQueue is empty"); // бинарня куча *
         Node* temp = head_;
         T result = temp->data;
         head_ = head_->next;

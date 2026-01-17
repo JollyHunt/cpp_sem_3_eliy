@@ -2,175 +2,71 @@
 #define DIJKSTRA_H
 
 #include "../UGraph.h"
-#include "../ege/AbstractEdge.h"
-#include "../ege/TransportType.h"
-#include "../ege/CarEdge.h"
-#include "../ege/PlaneEdge.h"
-#include "../ege/ShipEdge.h"
-#include "../ege/TruckEdge.h"
-#include <map>
-#include <queue>
 #include <functional>
+#include <queue>
+#include <map>
+#include <limits>
 
-struct State {
-    Vertex vertex;
-    TransportType transport;
+using EdgeFilter = std::function<bool(const CommonEdge*)>;
 
-    State() : vertex(), transport(TransportType::SHIP) {}
+inline ArraySequence<CommonEdge*> dijkstra(
+    const UGraph& graph,
+    const CommonVertex& start,
+    const CommonVertex& end,
+    EdgeFilter filter = nullptr) {
 
-    State(const Vertex& v, TransportType t) : vertex(v), transport(t) {}
+    std::map<CommonVertex, double> dist;
+    std::map<CommonVertex, std::pair<CommonVertex, CommonEdge*>> parent;
 
-    bool operator<(const State& other) const {
-        if (vertex < other.vertex) return true;
-        if (other.vertex < vertex) return false;
-        return static_cast<int>(transport) < static_cast<int>(other.transport);
-    }
+    auto cmp = [](const std::pair<double, CommonVertex>& a,
+                  const std::pair<double, CommonVertex>& b) {
+        return a.first > b.first;
+    };
+    std::priority_queue<std::pair<double, CommonVertex>,
+                        std::vector<std::pair<double, CommonVertex>>,
+                        decltype(cmp)> pq(cmp);
 
-    bool operator==(const State& other) const {
-        return vertex == other.vertex && transport == other.transport;
-    }
-};
-
-struct QueueItem {
-    double priority;
-    State state;
-    double totalTime;
-
-    QueueItem(double p, const State& s, double t) : priority(p), state(s), totalTime(t) {}
-
-    bool operator<(const QueueItem& other) const {
-        return priority > other.priority;
-    }
-};
-
-UGraph dijkstra(const UGraph& graph,
-                const Vertex& start,
-                const Vertex& end,
-                double cargoWeight,
-                double cargoSize,
-                double trafficFactor = 1.0,
-                double timeCostMultiplier = 1.0,
-                bool optimizeByTime = true) {
-
-    std::map<State, double> dist;
-    std::map<State, std::pair<State, AbstractEdge*>> parent;
-
-    std::priority_queue<QueueItem> pq;
-
-    auto startEdges = graph.getEdgesOf(start);
-    for (size_t i = 0; i < startEdges.Size(); ++i) {
-        AbstractEdge* e = startEdges.Get(i);
-        if (!e->canCarry(cargoWeight, cargoSize)) continue;
-
-        double travelTime = e->getActualTime(trafficFactor);
-        double travelCost = e->getActualCost(timeCostMultiplier);
-        double distance = optimizeByTime ? travelTime : travelCost;
-
-        State nextState(e->getTo(), e->getTransportType());
-        dist[nextState] = distance;
-        parent[nextState] = std::make_pair(State(start, e->getTransportType()), e);
-        pq.push(QueueItem(distance, nextState, travelTime));
-    }
-
-    UGraph pathGraph;
+    dist[start] = 0.0;
+    pq.push({0.0, start});
 
     while (!pq.empty()) {
-        QueueItem current = pq.top();
+        auto [d, u] = pq.top();
         pq.pop();
-        State currentState = current.state;
-        double currentTime = current.totalTime;
 
-        if (dist.find(currentState) != dist.end() && dist[currentState] < current.priority)
-            continue;
+        if (dist.find(u) == dist.end() || dist[u] < d) continue;
+        if (u.getId() == end.getId()) break;
 
-        if (currentState.vertex == end) {
-            pathGraph.addVertex(start);
-            pathGraph.addVertex(end);
-
-            State cur = currentState;
-            while (!(cur.vertex == start)) {
-                auto it = parent.find(cur);
-                if (it == parent.end()) break;
-
-                AbstractEdge* orig = it->second.second;
-                if (!orig) break;
-
-                Vertex from = orig->getFrom();
-                Vertex to = orig->getTo();
-
-                pathGraph.addVertex(from);
-                pathGraph.addVertex(to);
-
-                TransportType tt = orig->getTransportType();
-                if (tt == TransportType::SHIP) {
-                    pathGraph.addEdge(new ShipEdge(
-                        from, to,
-                        orig->getActualTime() / orig->getWeatherFactor(),
-                        orig->getActualCost(),
-                        orig->getMaxWeight(), orig->getMaxSize(),
-                        "clear"
-                    ));
-                } else if (tt == TransportType::TRUCK) {
-                    pathGraph.addEdge(new TruckEdge(
-                        from, to,
-                        orig->getActualTime() / (orig->getWeatherFactor() * trafficFactor),
-                        orig->getActualCost() / timeCostMultiplier,
-                        orig->getMaxWeight(), orig->getMaxSize(),
-                        "clear"
-                    ));
-                } else if (tt == TransportType::PLANE) {
-                    pathGraph.addEdge(new PlaneEdge(
-                        from, to,
-                        (orig->getActualTime() / orig->getWeatherFactor()) - 0.5,
-                        orig->getActualCost(),
-                        orig->getMaxWeight(), orig->getMaxSize(),
-                        "clear", 0.5
-                    ));
-                } else if (tt == TransportType::CAR) {
-                    pathGraph.addEdge(new CarEdge(
-                        from, to,
-                        orig->getActualTime() / (orig->getWeatherFactor() * trafficFactor),
-                        orig->getActualCost() / timeCostMultiplier,
-                        orig->getMaxWeight(), orig->getMaxSize(),
-                        "clear"
-                    ));
-                }
-
-                cur = it->second.first;
-            }
-
-            return std::move(pathGraph);
-        }
-
-        auto edges = graph.getEdgesOf(currentState.vertex);
+        auto edges = graph.getEdgesOf(u);
         for (size_t i = 0; i < edges.Size(); ++i) {
-            AbstractEdge* e = edges.Get(i);
-            if (!e->canCarry(cargoWeight, cargoSize)) continue;
+            CommonEdge* e = edges.Get(i);
 
-            Vertex next = (e->getFrom() == currentState.vertex) ? e->getTo() : e->getFrom();
-            TransportType nextTransport = e->getTransportType();
+            if (filter && !filter(e)) continue;
 
-            double edgeTime = e->getActualTime(trafficFactor);
-            double edgeCost = e->getActualCost(timeCostMultiplier);
+            CommonVertex v = (e->getFrom().getId() == u.getId()) ? e->getTo() : e->getFrom();
+            double w = e->getWeight();
 
-            double transferTime = next.getTransferTime();
-            double transferCost = next.getTransferCost();
+            if ( w > 1e9 || w < 0) continue;
 
-            double newTime = currentTime + transferTime + edgeTime;
-            double newCost = (dist[currentState] - (optimizeByTime ? currentTime : 0)) + transferCost + edgeCost;
-            double newDistance = optimizeByTime ? newTime : newCost;
-
-            State nextState(next, nextTransport);
-
-            if (dist.find(nextState) == dist.end() || newDistance < dist[nextState]) {
-                dist[nextState] = newDistance;
-                parent[nextState] = std::make_pair(currentState, e);
-                pq.push(QueueItem(newDistance, nextState, newTime));
+            if (dist.find(v) == dist.end() || dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                parent[v] = {u, e};
+                pq.push({dist[v], v});
             }
         }
     }
 
-    return pathGraph;
+    ArraySequence<CommonEdge*> path;
+    if (dist.find(end) == dist.end()) return path;
+
+    CommonVertex cur = end;
+    while (!(cur.getId() == start.getId())) {
+        auto it = parent.find(cur);
+        if (it == parent.end()) break;
+        path.Prepend(it->second.second);
+        cur = it->second.first;
+    }
+
+    return path;
 }
 
 #endif
